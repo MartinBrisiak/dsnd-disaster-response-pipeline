@@ -83,13 +83,14 @@ def index():
                     )
             ],
             'layout': {
-                'title': 'Proportion of Messages by Category',
+                'title': 'Messages by Category',
                 'yaxis': {
-                    'title': "Proportion"
+                    'title': "%"
                 },
                 'xaxis': {
+                    "automargin": True,
                     'title': "Category",
-                    'tickangle': -45
+                    'tickangle': -45,
                 }
             }
         }
