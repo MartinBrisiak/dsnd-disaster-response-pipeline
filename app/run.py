@@ -11,8 +11,8 @@ from plotly.graph_objs import Bar
 from sklearn.externals import joblib
 from sqlalchemy import create_engine
 
-
 app = Flask(__name__)
+
 
 def tokenize(text):
     tokens = word_tokenize(text)
@@ -25,24 +25,35 @@ def tokenize(text):
 
     return clean_tokens
 
+
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/DisasterResponse.db')
+df = pd.read_sql_table('messages', engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/classifier.pkl")
+categories = ['related', 'request', 'offer',
+              'aid_related', 'medical_help', 'medical_products',
+              'search_and_rescue', 'security', 'military', 'child_alone', 'water',
+              'food', 'shelter', 'clothing', 'money', 'missing_people',
+              'refugees', 'death', 'other_aid', 'infrastructure_related',
+              'transport', 'buildings', 'electricity', 'tools', 'hospitals',
+              'shops', 'aid_centers', 'other_infrastructure', 'weather_related',
+              'floods', 'storm', 'fire', 'earthquake', 'cold', 'other_weather',
+              'direct_report']
 
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
-    
     # extract data needed for visuals
     # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
-    
+
+    categories_data = [{"column": column, "value": df[column].sum() / df.shape[0]} for column in categories]
+    categories_data = sorted(categories_data, key=lambda k: k['value'], reverse=True)
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
@@ -63,13 +74,31 @@ def index():
                     'title': "Genre"
                 }
             }
+        },
+        {
+            'data': [
+                Bar(
+                    x=[dat["column"] for dat in categories_data],
+                    y=[dat["value"] for dat in categories_data]
+                    )
+            ],
+            'layout': {
+                'title': 'Proportion of Messages by Category',
+                'yaxis': {
+                    'title': "Proportion"
+                },
+                'xaxis': {
+                    'title': "Category",
+                    'tickangle': -45
+                }
+            }
         }
     ]
-    
+
     # encode plotly graphs in JSON
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
-    
+
     # render web page with plotly graphs
     return render_template('master.html', ids=ids, graphJSON=graphJSON)
 
@@ -78,7 +107,7 @@ def index():
 @app.route('/go')
 def go():
     # save user input in query
-    query = request.args.get('query', '') 
+    query = request.args.get('query', '')
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]
