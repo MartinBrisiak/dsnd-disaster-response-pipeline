@@ -1,17 +1,18 @@
 import sys
 import pickle
 import pandas as pd
+import numpy as np
 from sqlalchemy import create_engine
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
-from sklearn.pipeline import Pipeline, FeatureUnion
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.multioutput import MultiOutputClassifier
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 nltk.download(['punkt', 'wordnet', 'averaged_perceptron_tagger'])
 
@@ -87,7 +88,7 @@ def build_model():
 def evaluate_model(model, X_test, Y_test, category_names):
     """
     Evaluates the model based on prediction and testing labels.
-    Accuracy is calculated as mean of means of categories predictions.
+    Fot every category there is accuracy, precision, recall, and f1 scores calculated.
 
     :param model: the model!
     :param X_test: testing data
@@ -97,8 +98,16 @@ def evaluate_model(model, X_test, Y_test, category_names):
     """
 
     y_pred = model.predict(X_test)
-    accuracy = (y_pred == Y_test).mean().mean()
-    print(accuracy)
+    Y_test_as_array = np.array(Y_test)
+    for i in range(len(category_names)):
+        print("{} accuracy {} precision {} recall {} f1 {}".format(
+            category_names[i],
+            (y_pred[:, i] == Y_test_as_array[:, i]).mean(),  # accuracy
+            precision_score(Y_test_as_array[:, i], y_pred[:, i], average=None),  # precision
+            recall_score(Y_test_as_array[:, i], y_pred[:, i], average=None),  # recall
+            f1_score(Y_test_as_array[:, i], y_pred[:, i], average=None)  # f1
+        ))
+    print("mean accuracy {}".format((y_pred == Y_test_as_array).mean().mean()))
 
 
 def save_model(model, model_filepath):
@@ -109,9 +118,19 @@ def save_model(model, model_filepath):
     :param model_filepath: path to save the model
     :return: nothing
     """
-    
+
     with open(model_filepath, 'wb') as f:
         pickle.dump(model, f)
+
+
+def load_model(model_filepath):
+    """
+    for dev purposes
+    :param model_filepath:
+    :return:
+    """
+    with open(model_filepath, 'rb') as f:
+        return pickle.load(f)
 
 
 def main():
@@ -120,7 +139,6 @@ def main():
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
         X, Y, category_names = load_data(database_filepath)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
-
         print('Building model...')
         model = build_model()
 

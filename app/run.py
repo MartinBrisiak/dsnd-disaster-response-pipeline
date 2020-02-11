@@ -48,14 +48,12 @@ categories = ['related', 'request', 'offer',
 @app.route('/index')
 def index():
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
 
     categories_data = [{"column": column, "value": df[column].sum() / df.shape[0]} for column in categories]
     categories_data = sorted(categories_data, key=lambda k: k['value'], reverse=True)
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
     graphs = [
         {
             'data': [
