@@ -6,10 +6,11 @@ from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
     """
+    Loads the data from csv files into pandas dataframe and merge them based on "id" column.
 
-    :param messages_filepath:
-    :param categories_filepath:
-    :return:
+    :param messages_filepath: path to messages csv file
+    :param categories_filepath: path to categories csv file
+    :return: merged dataframe
     """
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
@@ -18,9 +19,12 @@ def load_data(messages_filepath, categories_filepath):
 
 def clean_data(df):
     """
+    Cleans the input messages and categories by:
+    - splitting categories into multiple columns
+    - transforming categories from string of text "related-1" to integer "1"
 
-    :param df:
-    :return:
+    :param df: dataframe of messages with categories in unclean form
+    :return: dataframe of messages with categories in clean form
     """
     categories = df.categories.str.split(";", expand=True)
     row = categories.iloc[0]
@@ -36,10 +40,11 @@ def clean_data(df):
 
 def save_data(df, database_filename):
     """
+    Saves the dataframe of messages and categories into the sql lite database with the table "messages".
 
-    :param df:
-    :param database_filename:
-    :return:
+    :param df: cleaned dataframe of messages with categories
+    :param database_filename: name of the file to save the database into
+    :return: nothing
     """
     engine = create_engine('sqlite:///{}'.format(database_filename))
     df.to_sql('messages', engine, index=False)

@@ -17,6 +17,14 @@ nltk.download(['punkt', 'wordnet', 'averaged_perceptron_tagger'])
 
 
 def load_data(database_filepath):
+    """
+    Loads the dataframe from "messages" table of sqllite database.
+    For the data training input part there is messages column and for the lables there are categories.
+
+    :param database_filepath: name of the file of sql lite db
+    :return: training data, labels and categories
+    """
+
     engine = create_engine('sqlite:///{}'.format(database_filepath))
     df = pd.read_sql_table("messages", engine)
     X = df["message"]
@@ -34,6 +42,13 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    """
+    Tokenize and then lemmatize the training data.
+
+    :param text: sentence to be messed up
+    :return: messed up sentence
+    """
+
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()
 
@@ -41,6 +56,17 @@ def tokenize(text):
 
 
 def build_model():
+    """
+    Creates the model out of transformers:
+     - count vectorizer
+     - Tfidf transformer
+    and classifiers:
+     - combined multi output classifier of random forest
+    Model is then parametrized with grid search.
+
+    :return: the model!
+    """
+
     pipeline = Pipeline([
         ('text_pipeline', Pipeline([
             ('vect', CountVectorizer(tokenizer=tokenize)),
@@ -51,24 +77,39 @@ def build_model():
     ])
 
     parameters = {
-        #         'text_pipeline__vect__ngram_range': ((1, 1), (1, 2)),
         'text_pipeline__vect__max_df': (0.75, 1.0),
-        #         'text_pipeline__vect__max_features': (None, 5000, 10000),
         'text_pipeline__vect__max_features': (None, 10000),
         'text_pipeline__tfidf__use_idf': (True, False)
-        #         'clf__estimator__n_estimators': [50, 100, 200],
-        #         'clf__estimator__min_samples_split': [2, 3, 4],
     }
     return GridSearchCV(pipeline, param_grid=parameters, verbose=10, n_jobs=2)
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    """
+    Evaluates the model based on prediction and testing labels.
+    Accuracy is calculated as mean of means of categories predictions.
+
+    :param model: the model!
+    :param X_test: testing data
+    :param Y_test: testing labels
+    :param category_names: nope
+    :return: nothing
+    """
+
     y_pred = model.predict(X_test)
     accuracy = (y_pred == Y_test).mean().mean()
     print(accuracy)
 
 
 def save_model(model, model_filepath):
+    """
+    Saves the model as pickle file.
+
+    :param model: the model!
+    :param model_filepath: path to save the model
+    :return: nothing
+    """
+    
     with open(model_filepath, 'wb') as f:
         pickle.dump(model, f)
 
